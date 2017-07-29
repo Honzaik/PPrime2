@@ -113,24 +113,24 @@ type
     end;
   end;
 
-function otocBin(c: cisloBin): cisloBin;
-var
-  zac, kon: integer;
-var
-  temp: boolean;
-begin
-  zac := 1;
-  kon := c.delka;
-  while (zac < kon) do
+  function otocBin(c: cisloBin): cisloBin;
+  var
+    zac, kon: integer;
+  var
+    temp: boolean;
   begin
-    temp := c.cislo[zac];
-    c.cislo[zac] := c.cislo[kon];
-    c.cislo[kon] := temp;
-    Inc(zac);
-    kon := kon - 1;
+    zac := 1;
+    kon := c.delka;
+    while (zac < kon) do
+    begin
+      temp := c.cislo[zac];
+      c.cislo[zac] := c.cislo[kon];
+      c.cislo[kon] := temp;
+      Inc(zac);
+      kon := kon - 1;
+    end;
+    otocBin := c;
   end;
-  otocBin := c;
-end;
 
 {
 1 : c1>c2
@@ -186,7 +186,7 @@ end;
     for i := 1 to MAX_DELKA_BIN do
     begin
       if (i > c.delka) then
-        c.cislo[i] := false;
+        c.cislo[i] := False;
     end;
   end;
 
@@ -301,6 +301,23 @@ end;
     leftShift := c;
   end;
 
+  procedure leftShiftByOne(var c: cisloBin);
+  var
+    i: integer;
+  begin
+    if ((c.delka + 1) > MAX_DELKA_BIN) then
+    begin
+      writeln('CHYBA DELKA');
+      exit;
+    end;
+    for i := c.delka downto 1 do
+    begin
+      c.cislo[i + 1] := c.cislo[i];
+      c.cislo[i] := False;
+    end;
+    c.delka := c.delka + 1;
+  end;
+
   function rightShift(c: cisloBin; positions: integer): cisloBin;
   var
     i: integer;
@@ -317,6 +334,23 @@ end;
     else
       c.delka := c.delka - positions;
     rightShift := c;
+  end;
+
+  procedure rightShiftByOne(var c: cisloBin);
+  var
+    i: integer;
+  begin
+    for i := 1 to c.delka do
+    begin
+      if ((i - 1) < 1) then
+        c.cislo[i] := False
+      else
+        c.cislo[i - 1] := c.cislo[i];
+    end;
+    if ((c.delka - 1) < 0) then
+      c.delka := 0
+    else
+      c.delka := c.delka - 1;
   end;
 
   function orBin(c1, c2: cisloBin): cisloBin;
@@ -396,7 +430,7 @@ end;
       carry := leftShift(andBin(c1, c2), 1);
       c1 := partial;
       c2 := carry;
-    until ((carry.delka < 2) and (carry.cislo[1] = false));
+    until ((carry.delka < 2) and (carry.cislo[1] = False));
      {
     while ((carry.delka > 1) or (carry.cislo[1] <> false)) do
     begin
@@ -409,101 +443,149 @@ end;
     addBin := partial;
   end;
 
-  function flip(c1 : cisloBin; delka : integer) : cisloBin;
-  var i : integer;
+  function flip(c1: cisloBin; delka: integer): cisloBin;
+  var
+    i: integer;
   begin
-    for i := 1 to delka do c1.cislo[i] := not c1.cislo[i];
-    for i := (delka+1) to MAX_DELKA_BIN do c1.cislo[i] := false;
+    for i := 1 to delka do
+      c1.cislo[i] := not c1.cislo[i];
+    for i := (delka + 1) to MAX_DELKA_BIN do
+      c1.cislo[i] := False;
     c1.delka := delka;
     flip := c1;
   end;
 
-  function subBin(c1, c2 : cisloBin) : cisloBin;
-  var jedna, mezi : cisloBin;
-  var i : integer;
+  function subBin(c1, c2: cisloBin): cisloBin;
+  var
+    jedna, mezi: cisloBin;
+  var
+    i: integer;
   begin
-       jedna.delka := 0;
-       vynulujBin(jedna);
-       jedna.delka := 1;
-       jedna.cislo[1] := true;
-       vynulujBin(c2);
-       mezi := addBin(c1, addBin(flip(c2, c1.delka), jedna));
-       i := mezi.delka;
-       while (mezi.cislo[i] <> true) and (i > 0) do i := i-1;
-       if(i > 0) then mezi.cislo[i] := false;
-       while (mezi.cislo[i] <> true) and (i > 0) do i := i-1;
-       mezi.delka := i;
-       subBin := mezi;
+    jedna.delka := 0;
+    vynulujBin(jedna);
+    jedna.delka := 1;
+    jedna.cislo[1] := True;
+    vynulujBin(c2);
+    mezi := addBin(c1, addBin(flip(c2, c1.delka), jedna));
+    i := mezi.delka;
+    while (mezi.cislo[i] <> True) and (i > 0) do
+      i := i - 1;
+    if (i > 0) then
+      mezi.cislo[i] := False;
+    while (mezi.cislo[i] <> True) and (i > 0) do
+      i := i - 1;
+    mezi.delka := i;
+    subBin := mezi;
   end;
 
-function divBin(c1, c2 : cisloBin) : cisloBin;  // c1/c2
-var vysl, mult, scaledDivisor, remain : cisloBin;
-begin
-  mult.delka := 1;
-  vynulujBin(mult);
-  mult.cislo[1] := true;
-  vysl.delka := 0;
-  vynulujBin(vysl);
-  scaledDivisor := c2;
-  remain := c1;
-  while (porovnaniBin(c1,scaledDivisor) = 1) do
+  function divBin(c1, c2: cisloBin): cisloBin;  // c1/c2
+  var
+    vysl, mult, scaledDivisor, remain: cisloBin;
   begin
-    scaledDivisor := leftShift(scaledDivisor, 1);
-    mult := leftShift(mult, 1);
+    mult.delka := 1;
+    vynulujBin(mult);
+    mult.cislo[1] := True;
+    vysl.delka := 0;
+    vynulujBin(vysl);
+    scaledDivisor := c2;
+    remain := c1;
+    while (porovnaniBin(c1, scaledDivisor) = 1) do
+    begin
+      leftShiftByOne(scaledDivisor);
+      leftShiftByOne(mult);
+    end;
+    repeat
+      if (porovnaniBin(remain, scaledDivisor) <> 2) then
+      begin
+        remain := subBin(remain, scaledDivisor);
+        vysl := addBin(vysl, mult);
+      end;
+      rightShiftByOne(scaledDivisor);
+      rightShiftByOne(mult);
+    until ((mult.delka < 2) and (mult.cislo[1] = False));
+    divBin := vysl;
   end;
-  repeat
-        if(porovnaniBin(remain,scaledDivisor) <> 2) then
-        begin
-          remain := subBin(remain, scaledDivisor);
-          //writeln('adding');
-          //vypisBin(otocBin(vysl));
-          //vypisBin(otocBin(mult));
-          vysl := addBin(vysl, mult);
-          //writeln('vysl');
-          //vypisBin(otocBin(vysl));     //addings is fcuked
-        end;
-        scaledDivisor := rightShift(scaledDivisor, 1);
-        mult := rightShift(mult, 1);
-  until ((mult.delka < 2) and (mult.cislo[1] = false));
-  divBin := vysl;
-end;
 
-function modBin(c1, c2 : cisloBin) : cisloBin; // c1 mod c2
-var vysl, mult, scaledDivisor, remain : cisloBin;
-begin
-  mult.delka := 1;
-  vynulujBin(mult);
-  mult.cislo[1] := true;
-  vysl.delka := 0;
-  vynulujBin(vysl);
-  scaledDivisor := c2;
-  remain := c1;
-  while (porovnaniBin(c1,scaledDivisor) = 1) do
+  function modBin(c1, c2: cisloBin): cisloBin; // c1 mod c2
+  var
+    vysl, mult, scaledDivisor, remain: cisloBin;
   begin
-    scaledDivisor := leftShift(scaledDivisor, 1);
-    mult := leftShift(mult, 1);
+    mult.delka := 1;
+    vynulujBin(mult);
+    mult.cislo[1] := True;
+    vysl.delka := 0;
+    vynulujBin(vysl);
+    scaledDivisor := c2;
+    remain := c1;
+    while (porovnaniBin(c1, scaledDivisor) = 1) do
+    begin
+      leftShiftByOne(scaledDivisor);
+      leftShiftByOne(mult);
+    end;
+    repeat
+      if (porovnaniBin(remain, scaledDivisor) <> 2) then
+      begin
+        remain := subBin(remain, scaledDivisor);
+        vysl := addBin(vysl, mult);
+      end;
+      rightShiftByOne(scaledDivisor);
+      rightShiftByOne(mult);
+    until ((mult.delka < 2) and (mult.cislo[1] = False));
+    modBin := remain;
   end;
-  repeat
-        if(porovnaniBin(remain,scaledDivisor) <> 2) then
-        begin
-          remain := subBin(remain, scaledDivisor);
-          vysl := addBin(vysl, mult);
-        end;
-        scaledDivisor := rightShift(scaledDivisor, 1);
-        mult := rightShift(mult, 1);
-  until ((mult.delka < 2) and (mult.cislo[1] = false));
-  modBin := remain;
-end;
 
+  function multBin(c1, c2: cisloBin): cisloBin;
+  var
+    vysl: cisloBin;
+  begin
+    vysl.delka := 0;
+    vynulujBin(vysl);
+    while ((c1.delka > 1) or (c1.cislo[1] <> False)) do
+    begin
+      if (c1.cislo[1] = True) then
+      begin
+        vysl := addBin(vysl, c2);
+      end;
+      rightShiftByOne(c1);
+      c2 := addBin(c2, c2);
+    end;
+    multBin := vysl;
+  end;
+
+  function modPowBin(base, exponent, modulus: cisloBin): cisloBin;
+  var
+    vysl, temp: cisloBin;
+  begin
+    vysl.delka := 0;
+    vynulujBin(vysl);
+    if ((modulus.delka = 1) and (modulus.cislo[1] = True)) then
+    begin
+      modPowBin := vysl;
+      exit;
+    end;
+    vysl.delka := 1;
+    vysl.cislo[1] := True;
+    base := modBin(base, modulus);
+    while ((exponent.delka > 1) or (exponent.cislo[1] = True)) do
+    begin
+      if (exponent.cislo[1] = True) then // exponent mod 2 = 1
+      begin
+        vysl := modBin(multBin(vysl, base), modulus);
+      end;
+      rightShiftByOne(exponent);
+      base := modBin(multBin(base, base), modulus);
+    end;
+    modPowBin := vysl;
+  end;
 
 var
   pocetCifer, pocetPrvocisel, i: integer;
 var
-  p, nahodne, pMensi: cisloT;
+  p, nahodne, pMensi, d: cisloT;
 var
-  bin, binP, binNahodne: cisloBin;
+  bin, binP, binNahodne, binD: cisloBin;
 var
-  d: vysledekDeleni;
+  dd: vysledekDeleni;
 var
   FromTime, ToTime: TDateTime;
   DiffMinutes: integer;
@@ -529,6 +611,9 @@ begin
   binNahodne := prevedDoBin(nahodne);
   vypisBin(otocBin(binNahodne));
 
-  bin := divBin(binP, binNahodne);
+  d := vydelDvema(nahodne).vysl;
+  binD := prevedDoBin(d);
+
+  bin := modPowBin(binNahodne, binD, binP);
   vypisBin(otocBin(bin));
 end.
