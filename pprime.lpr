@@ -289,7 +289,8 @@ type
   begin
     if ((c.delka + positions) > MAX_DELKA_BIN) then
     begin
-      writeln('CHYBA DELKA');
+      writeln('CHYBA DELKA ', c.delka, ' ', positions);
+      halt(1);
       exit;
     end;
     for i := c.delka downto 1 do
@@ -299,23 +300,6 @@ type
     end;
     c.delka := c.delka + positions;
     leftShift := c;
-  end;
-
-  procedure leftShiftByOne(var c: cisloBin);
-  var
-    i: integer;
-  begin
-    if ((c.delka + 1) > MAX_DELKA_BIN) then
-    begin
-      writeln('CHYBA DELKA');
-      exit;
-    end;
-    for i := c.delka downto 1 do
-    begin
-      c.cislo[i + 1] := c.cislo[i];
-      c.cislo[i] := False;
-    end;
-    c.delka := c.delka + 1;
   end;
 
   function rightShift(c: cisloBin; positions: integer): cisloBin;
@@ -334,23 +318,6 @@ type
     else
       c.delka := c.delka - positions;
     rightShift := c;
-  end;
-
-  procedure rightShiftByOne(var c: cisloBin);
-  var
-    i: integer;
-  begin
-    for i := 1 to c.delka do
-    begin
-      if ((i - 1) < 1) then
-        c.cislo[i] := False
-      else
-        c.cislo[i - 1] := c.cislo[i];
-    end;
-    if ((c.delka - 1) < 0) then
-      c.delka := 0
-    else
-      c.delka := c.delka - 1;
   end;
 
   function orBin(c1, c2: cisloBin): cisloBin;
@@ -466,6 +433,7 @@ type
     jedna.delka := 1;
     jedna.cislo[1] := True;
     vynulujBin(c2);
+    mezi.delka := 0;
     mezi := addBin(c1, addBin(flip(c2, c1.delka), jedna));
     i := mezi.delka;
     while (mezi.cislo[i] <> True) and (i > 0) do
@@ -491,8 +459,8 @@ type
     remain := c1;
     while (porovnaniBin(c1, scaledDivisor) = 1) do
     begin
-      leftShiftByOne(scaledDivisor);
-      leftShiftByOne(mult);
+      scaledDivisor := leftShift(scaledDivisor, 1);
+      mult := leftShift(mult, 1);
     end;
     repeat
       if (porovnaniBin(remain, scaledDivisor) <> 2) then
@@ -500,8 +468,8 @@ type
         remain := subBin(remain, scaledDivisor);
         vysl := addBin(vysl, mult);
       end;
-      rightShiftByOne(scaledDivisor);
-      rightShiftByOne(mult);
+      scaledDivisor := rightShift(scaledDivisor, 1);
+      mult := rightShift(mult, 1);
     until ((mult.delka < 2) and (mult.cislo[1] = False));
     divBin := vysl;
   end;
@@ -519,8 +487,8 @@ type
     remain := c1;
     while (porovnaniBin(c1, scaledDivisor) = 1) do
     begin
-      leftShiftByOne(scaledDivisor);
-      leftShiftByOne(mult);
+      scaledDivisor := leftShift(scaledDivisor, 1);
+      mult := leftShift(mult, 1);
     end;
     repeat
       if (porovnaniBin(remain, scaledDivisor) <> 2) then
@@ -528,8 +496,8 @@ type
         remain := subBin(remain, scaledDivisor);
         vysl := addBin(vysl, mult);
       end;
-      rightShiftByOne(scaledDivisor);
-      rightShiftByOne(mult);
+      scaledDivisor := rightShift(scaledDivisor, 1);
+      mult := rightShift(mult, 1);
     until ((mult.delka < 2) and (mult.cislo[1] = False));
     modBin := remain;
   end;
@@ -541,7 +509,7 @@ type
     vysl.delka := 0;
     vynulujBin(vysl);
     u.delka := 0;
-    vynuluj(u);
+    vynulujBin(u);
     for i := 1 to (c2.delka+1) do
     begin
 
@@ -560,7 +528,7 @@ type
       begin
         vysl := addBin(vysl, c2);
       end;
-      rightShiftByOne(c1);
+      c1 := rightShift(c1, 1);
       c2 := addBin(c2, c2);
     end;
     multBin := vysl;
@@ -569,6 +537,9 @@ type
   function modPowBin(base, exponent, modulus: cisloBin): cisloBin;
   var
     vysl, temp: cisloBin;
+    var
+  FromTime, ToTime: TDateTime;
+  DiffMinutes: integer;
   begin
     vysl.delka := 0;
     vynulujBin(vysl);
@@ -584,10 +555,20 @@ type
     begin
       if (exponent.cislo[1] = True) then // exponent mod 2 = 1
       begin
+        FromTime := Now;
         vysl := modBin(multBin(vysl, base), modulus);
+        DiffMinutes := MilliSecondsBetween(Now, FromTime);
+        writeln('mod ms ', DiffMinutes);
       end;
-      rightShiftByOne(exponent);
-      base := modBin(multBin(base, base), modulus);
+      exponent := rightShift(exponent, 1);
+      FromTime := Now;
+      temp := multBin(base, base);
+      DiffMinutes := MilliSecondsBetween(Now, FromTime);
+      writeln('mult ms ', DiffMinutes);
+      FromTime := Now;
+      base := modBin(temp, modulus);
+      DiffMinutes := MilliSecondsBetween(Now, FromTime);
+      writeln('mod ms ', DiffMinutes);
     end;
     modPowBin := vysl;
   end;
@@ -606,9 +587,10 @@ var
 begin
   Randomize;
   Write('Kolik cifer: ');
-  readln(pocetCifer);
+  //readln(pocetCifer);
   Write('Kolik ruznych prvocisel: ');
-  readln(pocetPrvocisel);
+  //readln(pocetPrvocisel);
+  pocetCifer := 50;
   p := generujPrvocislo(pocetCifer);
   vynuluj(p);
   vypisCislo(p);
