@@ -369,8 +369,6 @@ end;
   var
     vysl: cisloBin;
   begin
-    vynulujBin(c1);
-    vynulujBin(c2);
     posledniNenul := 0;
     if (c1.delka > c2.delka) then
       vetsiDelka := c1.delka
@@ -391,12 +389,23 @@ end;
   var
     partial, carry: cisloBin;
   begin
+    vynulujBin(c1);
+    vynulujBin(c2);
     repeat
       partial := xorBin(c1, c2);
       carry := leftShift(andBin(c1, c2), 1);
       c1 := partial;
       c2 := carry;
     until ((carry.delka < 2) and (carry.cislo[1] = false));
+     {
+    while ((carry.delka > 1) or (carry.cislo[1] <> false)) do
+    begin
+      carry := andBin(c1,c2);
+      carry := leftShift(carry, 1);
+      c1 := xorBin(c1, c2);
+      c2 := carry;
+    end;
+    addBin := c1;}
     addBin := partial;
   end;
 
@@ -446,17 +455,46 @@ begin
         if(porovnaniBin(remain,scaledDivisor) <> 2) then
         begin
           remain := subBin(remain, scaledDivisor);
-          writeln('adding');
-          vypisBin(otocBin(vysl));
-          vypisBin(otocBin(mult));
+          //writeln('adding');
+          //vypisBin(otocBin(vysl));
+          //vypisBin(otocBin(mult));
           vysl := addBin(vysl, mult);
-          vypisBin(otocBin(vysl));     //addings is fcuked
+          //writeln('vysl');
+          //vypisBin(otocBin(vysl));     //addings is fcuked
         end;
         scaledDivisor := rightShift(scaledDivisor, 1);
         mult := rightShift(mult, 1);
   until ((mult.delka < 2) and (mult.cislo[1] = false));
   divBin := vysl;
 end;
+
+function modBin(c1, c2 : cisloBin) : cisloBin; // c1 mod c2
+var vysl, mult, scaledDivisor, remain : cisloBin;
+begin
+  mult.delka := 1;
+  vynulujBin(mult);
+  mult.cislo[1] := true;
+  vysl.delka := 0;
+  vynulujBin(vysl);
+  scaledDivisor := c2;
+  remain := c1;
+  while (porovnaniBin(c1,scaledDivisor) = 1) do
+  begin
+    scaledDivisor := leftShift(scaledDivisor, 1);
+    mult := leftShift(mult, 1);
+  end;
+  repeat
+        if(porovnaniBin(remain,scaledDivisor) <> 2) then
+        begin
+          remain := subBin(remain, scaledDivisor);
+          vysl := addBin(vysl, mult);
+        end;
+        scaledDivisor := rightShift(scaledDivisor, 1);
+        mult := rightShift(mult, 1);
+  until ((mult.delka < 2) and (mult.cislo[1] = false));
+  modBin := remain;
+end;
+
 
 var
   pocetCifer, pocetPrvocisel, i: integer;
